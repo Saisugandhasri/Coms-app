@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routes.tense import router as tense_router
+from app.routes.exercise import router as exercise_router
 
 app = FastAPI()
 
@@ -11,4 +11,4 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(tense_router, prefix="/api/exercise")
+app.include_router(exercise_router)
