@@ -1,1 +1,1 @@
-ASSESSMENTS = {}
+ASSESSMENTS: dict = {}

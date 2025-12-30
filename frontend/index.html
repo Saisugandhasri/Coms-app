@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <title>MCQ Assessment Demo</title>
@@ -8,16 +9,19 @@
       font-family: Arial, sans-serif;
       margin: 40px;
     }
+
     .question {
       margin-bottom: 20px;
       padding: 10px;
       border: 1px solid #db8c8c;
     }
+
     .submit-btn {
       margin-top: 20px;
       padding: 10px 20px;
       font-size: 16px;
     }
+
     .score {
       margin-top: 30px;
       padding: 15px;
@@ -26,6 +30,7 @@
     }
   </style>
 </head>
+
 <body>
 
   <h2>MCQ Assessment Demo</h2>
@@ -43,90 +48,78 @@
 
   <div id="result" class="score"></div>
 
-<script>
-  let assessmentId = null;
+  <script>
+    let assessmentId = null;
+    let answers = {};
 
-  async function startAssessment() {
-    document.getElementById("questions").innerHTML = "";
-    document.getElementById("result").innerHTML = "";
+    async function startAssessment() {
+      document.getElementById("questions").innerHTML = "";
+      document.getElementById("result").innerHTML = "";
+      document.getElementById("paragraph").innerHTML = "";
+      answers = {};
 
-    const topic = document.getElementById("topic").value;
+      const topic = document.getElementById("topic").value;
 
-    const response = await fetch("http://localhost:8000/assessment/start", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ topic })
-    });
-
-    const data = await response.json();
-    assessmentId = data.assessment_id;
-
-    document.getElementById("paragraph").innerHTML =
-      `<p><b>Paragraph:</b> ${data.paragraph}</p>`;
-
-    const container = document.getElementById("questions");
-
-    data.questions.forEach(q => {
-      const div = document.createElement("div");
-      div.className = "question";
-
-      let html = `<p><b>${q.question}</b></p>`;
-      q.options.forEach(opt => {
-        html += `
-          <label>
-            <input type="radio"
-                   name="${q.question_id}"
-                   value="${opt}"
-                   onchange="saveAnswer('${q.question_id}', '${opt}')">
-            ${opt}
-          </label><br/>
-        `;
+      const response = await fetch("http://localhost:8000/assessment/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topic })
       });
 
-      div.innerHTML = html;
-      container.appendChild(div);
-    });
-  }
+      const data = await response.json();
+      assessmentId = data.assessment_id;
 
-  async function saveAnswer(questionId, selectedAnswer) {
-    await fetch("http://localhost:8000/assessment/answer", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        assessment_id: assessmentId,
-        question_id: questionId,
-        selected_answer: selectedAnswer
-      })
-    });
-  }
+      document.getElementById("paragraph").innerHTML =
+        `<p><b>Paragraph:</b> ${data.paragraph}</p>`;
 
-  async function submitAssessment() {
-    const response = await fetch("http://localhost:8000/assessment/submit", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        assessment_id: assessmentId
-      })
-    });
+      const container = document.getElementById("questions");
 
-    const data = await response.json();
+      data.mcqs.forEach((q, index) => {
+        const div = document.createElement("div");
+        div.className = "question";
 
-    let html = `<h3>Score: ${data.score}/${data.total_questions}</h3>`;
-    html += `<p>Percentage: ${data.percentage.toFixed(2)}%</p><ul>`;
+        let html = `<p><b>Q${index + 1}. ${q.question}</b></p>`;
 
-    data.results.forEach(r => {
-      html += `
-        <li>
-          <b>${r.question_id}</b> :
-          ${r.is_correct ? "✅ Correct" : "❌ Wrong"}
-        </li>
-      `;
-    });
+        Object.entries(q.options).forEach(([key, value]) => {
+          html += `
+          <label>
+            <input type="radio"
+                   name="q${index}"
+                   value="${key}"
+                   onchange="saveAnswer(${index}, '${key}')">
+            ${key}. ${value}
+          </label><br/>
+        `;
+        });
 
-    html += "</ul>";
-    document.getElementById("result").innerHTML = html;
-  }
-</script>
+        div.innerHTML = html;
+        container.appendChild(div);
+      });
+    }
+
+    function saveAnswer(questionIndex, selectedOption) {
+      answers[questionIndex] = selectedOption;
+    }
+
+    async function submitAssessment() {
+      console.log(answers);
+      const response = await fetch("http://localhost:8000/assessment/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          assessment_id: assessmentId,
+          answers: answers
+        })
+      });
+
+      const data = await response.json();
+
+      document.getElementById("result").innerHTML =
+        `<h3>Score: ${data.score} / ${Object.keys(answers).length}</h3>`;
+    }
+  </script>
+
 
 </body>
+
 </html>
