@@ -1,21 +1,30 @@
 def build_prompt(topic: str) -> str:
     return f"""
-Generate a clear educational paragraph on the topic: "{topic}"
+    You are a JSON API.
 
-Then generate exactly 5 multiple-choice questions based on the paragraph.
+    Generate:
+    1. One short educational paragraph on "{topic}"
+    2. Exactly 5 MCQs
 
-Rules:
-- Each question must have 4 options
-- Clearly mention the correct answer
-- Output strictly in JSON format:
-{{
-  "paragraph": "...",
-  "mcqs": [
+    Rules (VERY IMPORTANT):
+    - Output ONLY valid JSON
+    - No markdown
+    - No explanations
+    - Each MCQ MUST be an object
+    - Each MCQ MUST have:
+      - question (string)
+      - options (array of 4 strings)
+      - correct_answer (string, must match one option)
+
+    JSON format:
     {{
-      "question": "...",
-      "options": ["A", "B", "C", "D"],
-      "correct_answer": "..."
+      "paragraph": "...",
+      "mcqs": [
+        {{
+          "question": "...",
+          "options": ["A", "B", "C", "D"],
+          "correct_answer": "A"
+        }}
+      ]
     }}
-  ]
-}}
-"""
+    """

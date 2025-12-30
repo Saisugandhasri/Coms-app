@@ -9,7 +9,21 @@ def generate_content(topic: str):
     # Clean up markdown code blocks if present
     clean_output = raw_output.replace("```json", "").replace("```", "").strip()
 
-    try:
-        return json.loads(clean_output)
-    except json.JSONDecodeError:
-        raise ValueError("LLM returned invalid JSON")
+    data = json.loads(clean_output)
+
+    if "paragraph" not in data or "mcqs" not in data:
+        raise ValueError("Invalid LLM response")
+
+    valid_mcqs = []
+    for mcq in data["mcqs"]:
+        if(
+            isinstance(mcq, dict)
+            and "questions" in mcq
+            and "options" in mcq
+            and "correct_answer" in mcq
+        ):
+            valid_mcqs.append(mcq)
+    if len(valid_mcqs) < 1:
+        raise ValueError("No valid MCQs")
+    data["mcqs"] = valid_mcqs
+    return data
