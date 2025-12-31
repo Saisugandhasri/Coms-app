@@ -1,11 +1,19 @@
 def build_prompt(topic: str) -> str:
     return f"""
+You are a JSON generator.
+
+Rules:
+- Respond ONLY with valid JSON
+- No explanations
+- No markdown
+- Keep paragraph under 80 words
+
+Task:
 Generate:
-1. A short paragraph on "{topic}"
+1. One short paragraph on "{topic}"
 2. Exactly 5 MCQs
 
-Return ONLY valid JSON in this format:
-
+JSON format:
 {{
   "paragraph": "...",
   "mcqs": [
