@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>MCQ Assessment Demo</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+    }
+
+    .question {
+      margin-bottom: 20px;
+      padding: 10px;
+      border: 1px solid #db8c8c;
+    }
+
+    .submit-btn {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+    }
+
+    .score {
+      margin-top: 30px;
+      padding: 15px;
+      background: #f3f3f3;
+      border: 1px solid #ccc;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h2>MCQ Assessment Demo</h2>
+
+  <label>Topic:</label>
+  <input type="text" id="topic" value="Mountains" />
+  <button onclick="startAssessment()">Generate</button>
+
+  <hr />
+
+  <div id="paragraph"></div>
+  <div id="questions"></div>
+
+  <button class="submit-btn" onclick="submitAssessment()">Submit Answers</button>
+
+  <div id="result" class="score"></div>
+
+  <script>
+    let assessmentId = null;
+    let answers = {};
+
+    async function startAssessment() {
+      document.getElementById("questions").innerHTML = "";
+      document.getElementById("result").innerHTML = "";
+      document.getElementById("paragraph").innerHTML = "";
+      answers = {};
+
+      const topic = document.getElementById("topic").value;
+
+      const response = await fetch("http://localhost:8000/assessment/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topic })
+      });
+
+      const data = await response.json();
+      assessmentId = data.assessment_id;
+
+      document.getElementById("paragraph").innerHTML =
+        `<p><b>Paragraph:</b> ${data.paragraph}</p>`;
+
+      const container = document.getElementById("questions");
+
+      data.mcqs.forEach((q, index) => {
+        const div = document.createElement("div");
+        div.className = "question";
+
+        let html = `<p><b>Q${index + 1}. ${q.question}</b></p>`;
+
+        Object.entries(q.options).forEach(([key, value]) => {
+          html += `
+          <label>
+            <input type="radio"
+                   name="q${index}"
+                   value="${key}"
+                   onchange="saveAnswer(${index}, '${key}')">
+            ${key}. ${value}
+          </label><br/>
+        `;
+        });
+
+        div.innerHTML = html;
+        container.appendChild(div);
+      });
+    }
+
+    function saveAnswer(questionIndex, selectedOption) {
+      answers[questionIndex] = selectedOption;
+    }
+
+    async function submitAssessment() {
+      console.log(answers);
+      const response = await fetch("http://localhost:8000/assessment/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          assessment_id: assessmentId,
+          answers: answers
+        })
+      });
+
+      const data = await response.json();
+
+      document.getElementById("result").innerHTML =
+        `<h3>Score: ${data.score} / ${Object.keys(answers).length}</h3>`;
+    }
+  </script>
+
+
+</body>
+
+</html>
