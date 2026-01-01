@@ -1,10 +1,37 @@
-from fastapi import APIRouter,UploadFile, File
+from fastapi import APIRouter, HTTPException, UploadFile, File
+
+
+
+
+
+
+
+
+
+
 from services.whisper_service import transcribe_audio_from_bytes
 from services.utils import calculate_wpm, count_fillers
 from services.feedback_service import evaluate_speech
 from services.relevance_service import check_relevance
 
+
 router_image= APIRouter()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 @router_image.post("/process-audio")
 async def process_audio(file: UploadFile = File(...), duration: float = 0):
 
