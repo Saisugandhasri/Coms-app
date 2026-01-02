@@ -1,7 +1,7 @@
 import requests
 import json
 
-from backend.app.prompts.image_prompt import feedback_prompt
+from app.prompts.image_prompt import feedback_prompt
 
 
 def evaluate_speech(image_context: str, audio_text: str):

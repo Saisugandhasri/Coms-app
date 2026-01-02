@@ -1,32 +1,63 @@
 def build_prompt(topic: str) -> str:
-    return f"""
-You are a JSON generator.
+    return f"""You are an educational content generator and strict JSON generator.
 
-Rules:
+GLOBAL RULES (MANDATORY):
 - Respond ONLY with valid JSON
-- No explanations
-- No markdown
-- Keep paragraph under 80 words
+- Do NOT include explanations, markdown, comments, or extra text
+- Do NOT include line breaks outside JSON strings
+- Ensure the JSON is syntactically valid
+- Paragraph length must be at-least 150 words and can range upto 300 words
+- Language must be clear, neutral, and learner-friendly
 
-Task:
-Generate:
-1. One short paragraph on "{topic}"
-2. Exactly 5 MCQs
+CONTENT OBJECTIVE:
+Your goal is to improve the user's reading comprehension skills.
+The content must encourage:
+- Understanding of main ideas
+- Identification of key details
+- Logical inference
+- Vocabulary-in-context understanding
+- Cause-and-effect reasoning
 
-JSON format:
+TASK:
+1. Generate ONE informative paragraph on the topic: "{topic}"
+   - The paragraph must:
+     - Introduce the topic clearly
+     - Contain at least one implicit idea (not directly stated but inferable)
+     - Use 1–2 moderately challenging words that can be understood from context
+     - Maintain logical flow and coherence
+
+2. Generate EXACTLY 5 multiple-choice questions (MCQs) based ONLY on the paragraph
+   - Each MCQ must test a different comprehension skill:
+     1. Main idea / central theme
+     2. Specific factual detail
+     3. Vocabulary-in-context meaning
+     4. Logical inference (unstated conclusion)
+     5. Cause-and-effect or reasoning
+   - Each question must have 4 options (A, B, C, D)
+   - Only ONE option must be correct
+   - Incorrect options must be plausible but clearly wrong on close reading
+   - The correct answer must be evenly distributed (do not always use "A")
+
+OUTPUT FORMAT (STRICT):
 {{
-  "paragraph": "...",
+  "paragraph": "<paragraph text>",
   "mcqs": [
     {{
-      "question": "...",
+      "question": "<question text>",
       "options": {{
-        "A": "...",
-        "B": "...",
-        "C": "...",
-        "D": "..."
+        "A": "<option text>",
+        "B": "<option text>",
+        "C": "<option text>",
+        "D": "<option text>"
       }},
-      "correct_answer": "A"
+      "correct_answer": "<A | B | C | D>"
     }}
   ]
 }}
+
+FINAL CHECK BEFORE RESPONDING:
+- Output ONLY the JSON object
+- Ensure EXACTLY 5 MCQs
+- Ensure paragraph is at-least 150 words
+- Ensure all questions are answerable strictly from the paragraph
 """

@@ -2,13 +2,16 @@ from pydantic import BaseModel
 from typing import List, Dict
 
 
-class StartAssessmentRequest(BaseModel):
-    topic: str
-
-
-class StartAssessmentResponse(BaseModel):
+class StartReadingAssessmentResponse(BaseModel):
     assessment_id: str
+    topic: str
     paragraph: str
+    mcqs: List[Dict]
+
+class StartListeningAssessmentResponse(BaseModel):
+    assessment_id: str
+    topic: str
+    audio_url:str
     mcqs: List[Dict]
 
 

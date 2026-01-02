@@ -1,17 +1,19 @@
-import requests
+from groq import Groq
+
+client = Groq()
 
 def call_llm(prompt: str) -> str:
     try:
-        response = requests.post(
-            "http://localhost:11434/api/generate",
-            json={
-                "model": "llama3.2",
-                "prompt": prompt,
-                "stream": False,
-            },
-            timeout=180,
+        completion = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.7,
+            max_completion_tokens=1024,
+            top_p=1,
         )
-        response.raise_for_status()
-        return response.json()["response"]
+        return completion.choices[0].message.content
+
     except Exception as e:
         raise RuntimeError(f"LLM service unavailable: {str(e)}")

@@ -1,6 +1,6 @@
 import requests
 
-from backend.app.prompts.image_prompt import relevance_prompt
+from app.prompts.image_prompt import relevance_prompt
 
 IMAGE_CONTEXT = "This description must match the image content the user presented."
 

@@ -1,8 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.router import router_image
-from app.api.routes import router
+from app.api.router import router_image,router_reading_com,router_listening_com
+from fastapi.staticfiles import StaticFiles
 
 app = FastAPI(title="Communication Application")
 
@@ -16,8 +16,12 @@ app.add_middleware(
 
 
 app.include_router(router_image)
-app.include_router(router)
+app.include_router(router_reading_com)
+app.include_router(router_listening_com)
 
+
+
+app.mount("/audio", StaticFiles(directory="generated_audio"), name="audio")
 
 @app.get("/health")
 def health_check():
