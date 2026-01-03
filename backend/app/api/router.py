@@ -17,7 +17,6 @@ from app.services.whisper_service import transcribe_audio_from_bytes
 from app.services.utils import calculate_wpm, count_fillers
 from app.services.feedback_service import evaluate_speech
 from app.services.relevance_service import check_relevance
-
 from app.services.listening_com_service import start_listening_assessment
 
 router_reading_com = APIRouter(prefix="/reading_comprehension", tags=["Reading_Comprehension"])

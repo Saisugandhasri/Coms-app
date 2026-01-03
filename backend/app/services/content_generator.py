@@ -1,5 +1,5 @@
 import json
-from app.core.llm_client import call_llm
+from app.core.llm_client_R_L import call_llm
 from app.prompts.mcq_prompt import build_prompt
 
 
