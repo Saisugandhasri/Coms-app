@@ -37,6 +37,7 @@ TASK:
    - Only ONE option must be correct
    - Incorrect options must be plausible but clearly wrong on close reading
    - The correct answer must be evenly distributed (do not always use "A")
+3. Generate EXACTLY 3 one-word questions based ONLY on the paragraph
 
 OUTPUT FORMAT (STRICT):
 {{
@@ -52,12 +53,19 @@ OUTPUT FORMAT (STRICT):
       }},
       "correct_answer": "<A | B | C | D>"
     }}
+  ],
+    "one_word_questions": [
+    {{
+      "question": "<question text>",
+      "answer": "<single_word_answer>"
+    }}
   ]
 }}
 
 FINAL CHECK BEFORE RESPONDING:
 - Output ONLY the JSON object
 - Ensure EXACTLY 5 MCQs
+- Ensure EXACTLY 3 one-word questions
 - Ensure paragraph is at-least 150 words
 - Ensure all questions are answerable strictly from the paragraph
 """

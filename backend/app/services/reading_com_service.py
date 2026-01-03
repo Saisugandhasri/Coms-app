@@ -12,6 +12,8 @@ def start_reading_assessment() -> dict:
     ASSESSMENTS[assessment_id] = {
         "mode" : "reading",
         "mcqs": content["mcqs"],
+        "one_word_questions": content["one_word_questions"],
+
     }
 
     return {
@@ -19,6 +21,7 @@ def start_reading_assessment() -> dict:
         "topic": topic,
         "paragraph": content["paragraph"],
         "mcqs": content["mcqs"],
+        "one_word_questions": content["one_word_questions"],
     }
 
 
@@ -28,8 +31,18 @@ def submit_reading_assessment(assessment_id: str, answers: dict) -> dict | None:
         return None
 
     score = 0
+    # Answers is now {'mcqs': {...}, 'one_word': {...}}
+    mcq_answers = answers.get("mcqs", {})
+    one_word_answers = answers.get("one_word", {})
+
     for idx, mcq in enumerate(assessment["mcqs"]):
-        if answers.get(idx) == mcq["correct_answer"]:
+        if mcq_answers.get(str(idx)) == mcq["correct_answer"]:
+            score += 1
+    
+    for idx, q in enumerate(assessment["one_word_questions"]):
+        user_ans = one_word_answers.get(str(idx), "").lower().strip()
+        correct_ans = q["answer"].lower().strip()
+        if user_ans == correct_ans:
             score += 1
 
     return {"score": score}

@@ -1,4 +1,11 @@
 from groq import Groq
+import os
+from dotenv import load_dotenv
+
+# Load .env from project root (3 levels up from app/core)
+base_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+env_path = os.path.join(base_path, "..", ".env")
+load_dotenv(env_path)
 
 client = Groq()
 
