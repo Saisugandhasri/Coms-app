@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>MCQ Assessment Demo</title>
+  <title>Listening Comprehension Assessment</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -13,7 +13,7 @@
     .question {
       margin-bottom: 20px;
       padding: 10px;
-      border: 1px solid #db8c8c;
+      border: 1px solid #8cb6db;
     }
 
     .submit-btn {
@@ -33,20 +33,31 @@
       margin-top: 10px;
       font-weight: bold;
     }
+
+    .audio-box {
+      margin: 20px 0;
+    }
   </style>
 </head>
 
 <body>
 
-  <h2>MCQ Assessment Demo</h2>
+  <h2>Listening Comprehension</h2>
 
-  <!-- START BUTTON ONLY -->
-  <button onclick="startAssessment()">Start Assessment</button>
+  <button onclick="startListeningAssessment()">Start Listening Assessment</button>
 
   <hr />
 
   <div id="topic" class="topic"></div>
-  <div id="paragraph"></div>
+
+  <!-- AUDIO SECTION -->
+  <div id="audio-container" class="audio-box">
+    <audio>
+      <source src="" type="audio/mpeg">
+    </audio>
+  </div>
+
+  <!-- QUESTIONS -->
   <div id="questions"></div>
 
   <button class="submit-btn" onclick="submitAssessment()">Submit Answers</button>
@@ -57,29 +68,51 @@
     let assessmentId = null;
     let answers = {};
 
-    async function startAssessment() {
+    async function startListeningAssessment() {
       // Reset UI
       document.getElementById("questions").innerHTML = "";
       document.getElementById("result").innerHTML = "";
-      document.getElementById("paragraph").innerHTML = "";
+      document.getElementById("audio-container").innerHTML = "";
       document.getElementById("topic").innerHTML = "";
       answers = {};
 
-      const response = await fetch("http://localhost:8000/reading_comprehension/start", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" }
-      });
+      const response = await fetch(
+        "http://localhost:8000/listening_comprehension/start",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" }
+        }
+      );
 
       const data = await response.json();
       assessmentId = data.assessment_id;
 
-      // Show topic (backend-selected)
+      // Show topic
       document.getElementById("topic").innerHTML =
         `Topic: ${data.topic}`;
 
-      document.getElementById("paragraph").innerHTML =
-        `<p><b>Paragraph:</b> ${data.paragraph}</p>`;
+      // Audio player + speed control
+      document.getElementById("audio-container").innerHTML = `
+        <p><b>Listen to the passage:</b></p>
 
+        <label>Playback Speed:</label>
+        <select onchange="setSpeed(this.value)">
+          <option value="0.75">0.75×</option>
+          <option value="0.9">0.9×</option>
+          <option value="1" selected>1.0×</option>
+          <option value="1.1">1.1×</option>
+          <option value="1.25">1.25×</option>
+        </select>
+
+        <br/><br/>
+
+        <audio id="audioPlayer" controls>
+          <source src="${data.audio_url}" type="audio/mpeg">
+          Your browser does not support audio playback.
+        </audio>
+      `;
+
+      // Render questions
       const container = document.getElementById("questions");
 
       data.mcqs.forEach((q, index) => {
@@ -105,19 +138,29 @@
       });
     }
 
+    function setSpeed(speed) {
+      const audio = document.getElementById("audioPlayer");
+      if (audio) {
+        audio.playbackRate = speed;
+      }
+    }
+
     function saveAnswer(questionIndex, selectedOption) {
       answers[questionIndex] = selectedOption;
     }
 
     async function submitAssessment() {
-      const response = await fetch("http://localhost:8000/reading_comprehension/submit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          assessment_id: assessmentId,
-          answers: answers
-        })
-      });
+      const response = await fetch(
+        "http://localhost:8000/listening_comprehension/submit",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            assessment_id: assessmentId,
+            answers: answers
+          })
+        }
+      );
 
       const data = await response.json();
 
