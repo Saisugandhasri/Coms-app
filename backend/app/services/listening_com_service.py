@@ -37,14 +37,21 @@ def submit_listening_assessment(assessment_id: str, answers: dict) -> dict | Non
     mcq_answers = answers.get("mcqs", {})
     one_word_answers = answers.get("one_word", {})
 
+    correct_answers = {
+        "mcqs": {},
+        "one_word": {}
+    }
+
     for idx, mcq in enumerate(assessment["mcqs"]):
+        correct_answers["mcqs"][str(idx)] = mcq["correct_answer"]
         if mcq_answers.get(str(idx)) == mcq["correct_answer"]:
             score += 1
     
     for idx, q in enumerate(assessment["one_word_questions"]):
+        correct_answers["one_word"][str(idx)] = q["answer"]
         user_ans = one_word_answers.get(str(idx), "").lower().strip()
         correct_ans = q["answer"].lower().strip()
         if user_ans == correct_ans:
             score += 1
 
-    return {"score": score}
+    return {"score": score, "correct_answers": correct_answers}

@@ -34,3 +34,4 @@ class SubmitAssessmentRequest(BaseModel):
 
 class SubmitAssessmentResponse(BaseModel):
     score: int
+    correct_answers: Dict[str, Dict[str, str]]
