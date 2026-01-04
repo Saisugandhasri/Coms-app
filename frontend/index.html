@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>MCQ Assessment Demo</title>
+  <title>Reading Comprehension</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -16,10 +16,13 @@
       border: 1px solid #db8c8c;
     }
 
+    .one-word {
+      margin-bottom: 15px;
+    }
+
     .submit-btn {
       margin-top: 20px;
       padding: 10px 20px;
-      font-size: 16px;
     }
 
     .score {
@@ -30,101 +33,181 @@
     }
 
     .topic {
-      margin-top: 10px;
       font-weight: bold;
+      margin-top: 10px;
     }
   </style>
 </head>
 
 <body>
 
-  <h2>MCQ Assessment Demo</h2>
-
-  <!-- START BUTTON ONLY -->
+  <h2>Reading Comprehension</h2>
   <button onclick="startAssessment()">Start Assessment</button>
 
   <hr />
 
   <div id="topic" class="topic"></div>
   <div id="paragraph"></div>
+
+  <h3>MCQs</h3>
   <div id="questions"></div>
 
-  <button class="submit-btn" onclick="submitAssessment()">Submit Answers</button>
+  <h3>One-Word Questions</h3>
+  <div id="one-word"></div>
 
+  <button class="submit-btn" onclick="submitAssessment()">Submit Answers</button>
   <div id="result" class="score"></div>
 
   <script>
     let assessmentId = null;
-    let answers = {};
+    let mcqAnswers = {};
+    let oneWordAnswers = {};
+    let totalMcqs = 0;
+    let totalOneWords = 0;
+    let isSubmitted = false;
 
     async function startAssessment() {
-      // Reset UI
+      mcqAnswers = {};
+      oneWordAnswers = {};
+      isSubmitted = false;
+      document.querySelector(".submit-btn").disabled = false;
       document.getElementById("questions").innerHTML = "";
+      document.getElementById("one-word").innerHTML = "";
       document.getElementById("result").innerHTML = "";
       document.getElementById("paragraph").innerHTML = "";
       document.getElementById("topic").innerHTML = "";
-      answers = {};
 
-      const response = await fetch("http://localhost:8000/reading_comprehension/start", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" }
+      const response = await fetch("http://localhost:8000/assessment/reading/start", {
+        method: "POST"
       });
 
       const data = await response.json();
       assessmentId = data.assessment_id;
+      totalMcqs = data.mcqs.length;
+      totalOneWords = data.one_word_questions.length;
 
-      // Show topic (backend-selected)
-      document.getElementById("topic").innerHTML =
-        `Topic: ${data.topic}`;
+      document.getElementById("topic").innerText = `Topic: ${data.topic}`;
+      document.getElementById("paragraph").innerHTML = `<p>${data.paragraph}</p>`;
 
-      document.getElementById("paragraph").innerHTML =
-        `<p><b>Paragraph:</b> ${data.paragraph}</p>`;
-
-      const container = document.getElementById("questions");
-
-      data.mcqs.forEach((q, index) => {
-        const div = document.createElement("div");
-        div.className = "question";
-
-        let html = `<p><b>Q${index + 1}. ${q.question}</b></p>`;
-
-        Object.entries(q.options).forEach(([key, value]) => {
+      // MCQs
+      data.mcqs.forEach((q, i) => {
+        let html = `<div class="question"><b>Q${i + 1}. ${q.question}</b><br>`;
+        Object.entries(q.options).forEach(([k, v]) => {
           html += `
-            <label>
-              <input type="radio"
-                     name="q${index}"
-                     value="${key}"
-                     onchange="saveAnswer(${index}, '${key}')">
-              ${key}. ${value}
-            </label><br/>
-          `;
+        <label>
+          <input type="radio" name="mcq${i}"
+                 onchange="mcqAnswers['${i}']='${k}'">
+          ${k}. ${v}
+        </label><br>`;
         });
+        html += "</div>";
+        document.getElementById("questions").innerHTML += html;
+      });
 
-        div.innerHTML = html;
-        container.appendChild(div);
+      // One-word
+      data.one_word_questions.forEach((q, i) => {
+        document.getElementById("one-word").innerHTML += `
+      <div class="one-word">
+        <b>Q${i + 1}. ${q.question}</b><br>
+        <input type="text"
+               oninput="oneWordAnswers['${i}']=this.value.trim()">
+      </div>
+    `;
       });
     }
 
-    function saveAnswer(questionIndex, selectedOption) {
-      answers[questionIndex] = selectedOption;
-    }
-
     async function submitAssessment() {
-      const response = await fetch("http://localhost:8000/reading_comprehension/submit", {
+      if (isSubmitted) return;
+
+      // Validation
+      const answeredMcqs = Object.keys(mcqAnswers).length;
+      const answeredOneWords = Object.keys(oneWordAnswers).length;
+
+      // Check for empty one-word answers even if key exists (though trim handles it mostly, 
+      // if they type and delete, key might remain with empty string depending on implementation. 
+      // current implementation: oneWordAnswers['${i}']=this.value.trim() 
+      // So if they clear it, it becomes "".
+
+      const filledOneWords = Object.values(oneWordAnswers).filter(v => v !== "").length;
+
+      if (answeredMcqs < totalMcqs || filledOneWords < totalOneWords) {
+        const resultDiv = document.getElementById("result");
+        resultDiv.innerHTML = "<h3 style='color: red;'>Please answer all questions before submitting.</h3>";
+        return;
+      }
+
+      const response = await fetch("http://localhost:8000/assessment/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           assessment_id: assessmentId,
-          answers: answers
+          answers: {
+            mcqs: mcqAnswers,
+            one_word: oneWordAnswers
+          }
         })
       });
 
       const data = await response.json();
-
       document.getElementById("result").innerHTML =
-        `<h3>Score: ${data.score} / 5</h3>`;
+        `<h3>Score: ${data.score}</h3>`;
+
+      isSubmitted = true;
+      document.querySelector(".submit-btn").disabled = true;
+
+      // Display correct answers
+      const correctAnswers = data.correct_answers;
+
+      // MCQs
+      Object.entries(correctAnswers.mcqs).forEach(([idx, answer]) => {
+        const questionDiv = document.querySelectorAll("#questions .question")[idx];
+        if (questionDiv) {
+          const userSelected = mcqAnswers[idx];
+          if (userSelected && userSelected !== answer) {
+            const labels = questionDiv.querySelectorAll('label');
+            labels.forEach(label => {
+              if (label.innerText.trim().startsWith(userSelected + ".")) {
+                label.style.color = "red";
+                label.style.fontWeight = "bold";
+                label.innerHTML += " ❌ (Your Answer)";
+              }
+            });
+          }
+
+          const answerDiv = document.createElement("div");
+          answerDiv.style.color = "green";
+          answerDiv.style.fontWeight = "bold";
+          answerDiv.innerText = `Correct Answer: ${answer}`;
+          questionDiv.appendChild(answerDiv);
+        }
+      });
+
+      // One-word
+      Object.entries(correctAnswers.one_word).forEach(([idx, answer]) => {
+        const questionDiv = document.querySelectorAll("#one-word .one-word")[idx];
+        if (questionDiv) {
+          const input = questionDiv.querySelector('input');
+          const userAns = oneWordAnswers[idx] || "";
+          if (userAns.toLowerCase().trim() !== answer.toLowerCase().trim()) {
+            input.style.border = "2px solid red";
+            input.style.color = "red";
+
+            const wrongDiv = document.createElement("div");
+            wrongDiv.style.color = "red";
+            wrongDiv.innerText = `Your Answer: ${userAns} ❌`;
+            questionDiv.appendChild(wrongDiv);
+          }
+
+          const answerDiv = document.createElement("div");
+          answerDiv.style.color = "green";
+          answerDiv.style.fontWeight = "bold";
+          answerDiv.innerText = `Correct Answer: ${answer}`;
+          questionDiv.appendChild(answerDiv);
+        }
+      });
     }
   </script>
 
 </body>
+
 </html>
