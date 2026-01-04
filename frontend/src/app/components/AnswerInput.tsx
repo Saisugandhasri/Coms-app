@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Mic, Type, Send } from 'lucide-react';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 
 interface AnswerInputProps {
-  onSubmit: (answer: string, isAudio: boolean) => void;
+  onSubmit: (answer: string | Blob, isAudio: boolean) => void;
+
   disabled?: boolean;
 }
 
@@ -15,36 +16,62 @@ export function AnswerInput({ onSubmit, disabled }: AnswerInputProps) {
   const [audioAnswer, setAudioAnswer] = useState('');
   const [activeTab, setActiveTab] = useState<'text' | 'audio'>('text');
 
+  /* 🔥 NEW: real audio recording state */
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recordedAudioRef = useRef<Blob | null>(null);
+
   const handleTextSubmit = () => {
     if (textAnswer.trim()) {
       onSubmit(textAnswer.trim(), false);
     }
   };
 
-  const handleRecordToggle = () => {
+  /* 🔥 FIXED: real microphone recording */
+  const handleRecordToggle = async () => {
     if (!isRecording) {
-      // Start recording
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+      const recorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = recorder;
+      audioChunksRef.current = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          audioChunksRef.current.push(e.data);
+        }
+      };
+
+      recorder.onstop = () => {
+        const audioBlob = new Blob(audioChunksRef.current, {
+          type: 'audio/webm',
+        });
+
+        recordedAudioRef.current = audioBlob;
+        setAudioAnswer('Audio recorded successfully');
+        stream.getTracks().forEach(track => track.stop());
+
+      };
+
+      recorder.start();
       setIsRecording(true);
-      // Simulate recording for 2 seconds
-      setTimeout(() => {
-        setIsRecording(false);
-        setAudioAnswer('I go to the store yesterday'); // Simulated transcription
-      }, 2000);
     } else {
+      mediaRecorderRef.current?.stop();
       setIsRecording(false);
     }
   };
 
+  /* 🔥 Submit audio (real audio, not fake text) */
   const handleAudioSubmit = () => {
-    if (audioAnswer) {
-      onSubmit(audioAnswer, true);
+    if (recordedAudioRef.current) {
+      onSubmit(recordedAudioRef.current, true);
     }
   };
 
   return (
     <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
       <h3 className="mb-4">Your Answer</h3>
-      
+
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'text' | 'audio')}>
         <TabsList className="grid w-full grid-cols-2 mb-4">
           <TabsTrigger value="text" className="flex items-center gap-2">
@@ -56,7 +83,7 @@ export function AnswerInput({ onSubmit, disabled }: AnswerInputProps) {
             Audio
           </TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="text" className="space-y-4">
           <Textarea
             placeholder="Type the corrected sentence here..."
@@ -75,7 +102,7 @@ export function AnswerInput({ onSubmit, disabled }: AnswerInputProps) {
             Submit Answer
           </Button>
         </TabsContent>
-        
+
         <TabsContent value="audio" className="space-y-4">
           <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 flex flex-col items-center justify-center min-h-[100px]">
             {isRecording ? (
@@ -91,7 +118,6 @@ export function AnswerInput({ onSubmit, disabled }: AnswerInputProps) {
                   <Mic className="w-8 h-8 text-white" />
                 </div>
                 <p className="text-green-600">Recording captured</p>
-                <p className="text-sm text-gray-600 mt-2">Transcription: "{audioAnswer}"</p>
               </div>
             ) : (
               <div className="text-center">
@@ -100,7 +126,7 @@ export function AnswerInput({ onSubmit, disabled }: AnswerInputProps) {
               </div>
             )}
           </div>
-          
+
           <div className="flex gap-2">
             <Button
               onClick={handleRecordToggle}
@@ -113,7 +139,7 @@ export function AnswerInput({ onSubmit, disabled }: AnswerInputProps) {
               {isRecording ? 'Stop Recording' : audioAnswer ? 'Re-record' : 'Start Recording'}
             </Button>
           </div>
-            
+
           {audioAnswer && (
             <Button
               onClick={handleAudioSubmit}

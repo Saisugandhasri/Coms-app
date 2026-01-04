@@ -1,11 +1,13 @@
 from fastapi import APIRouter, UploadFile, File, Form
 from pydantic import BaseModel
 from uuid import uuid4
-from app.services.llm_service import generate_tense_question, evaluate_answer
 from fastapi.responses import FileResponse
-from app.services.tts_service import text_to_speech
 import os
+import shutil
 
+from app.services.llm_service import generate_tense_questions_batch, evaluate_answer
+from app.services.tts_service import text_to_speech
+from app.services.stt_service import speech_to_text
 
 router = APIRouter(prefix="/api/exercise", tags=["Exercise"])
 
@@ -13,10 +15,17 @@ router = APIRouter(prefix="/api/exercise", tags=["Exercise"])
 # -----------------------
 # Schemas
 # -----------------------
+
 class AnswerRequest(BaseModel):
     exercise_id: str
     sentence: str
+    target_tense: str
     user_answer: str
+
+
+
+class TTSRequest(BaseModel):
+    text: str
 
 
 # -----------------------
@@ -27,18 +36,15 @@ def health():
     return {"status": "Exercise service running"}
 
 
-@router.get("/tense")
-def get_tense_exercise():
-    """
-    LLaMA generates the question
-    """
-    question = generate_tense_question()
+@router.post("/tense/start")
+def start_tense_exercise():
+    data = generate_tense_questions_batch()
 
     return {
         "exercise_id": str(uuid4()),
-        "sentence": question["sentence"],
-        "topic": question.get("topic", "tense")
+        "questions": data["questions"]
     }
+
 
 
 @router.post("/tense/answer/text")
@@ -48,43 +54,54 @@ def submit_text_answer(payload: AnswerRequest):
     """
     result = evaluate_answer(
         sentence=payload.sentence,
-        user_answer=payload.user_answer
+        target_tense=payload.target_tense,
+        user_answer=payload.user_answer,
     )
 
     return {
         "exercise_id": payload.exercise_id,
-        **result
+        **result,
     }
 
 
 @router.post("/tense/answer/audio")
-def submit_audio_answer(
+async def submit_audio_answer(
     exercise_id: str = Form(...),
     sentence: str = Form(...),
-    audio_file: UploadFile = File(...)
+    target_tense: str = Form(...),   # ✅ ADD THIS LINE
+    audio_file: UploadFile = File(...),
 ):
     """
     Whisper → text → LLaMA
     """
 
-    # TODO: Whisper transcription
-    transcribed_text = "I went to the store yesterday"
+    # 1. Save uploaded audio to disk
+    os.makedirs("temp_audio", exist_ok=True)
+    audio_path = f"temp_audio/{uuid4()}_{audio_file.filename}"
 
+    with open(audio_path, "wb") as buffer:
+        shutil.copyfileobj(audio_file.file, buffer)
+
+    # 2. Speech to text (Whisper expects FILE PATH)
+    transcribed_text = speech_to_text(audio_path)
+
+    # 3. Cleanup temp file
+    os.remove(audio_path)
+
+    # 4. Evaluate with LLM
     result = evaluate_answer(
         sentence=sentence,
-        user_answer=transcribed_text
+        target_tense=target_tense,    # ✅ PASS IT HERE
+        user_answer=transcribed_text,
     )
 
     return {
         "exercise_id": exercise_id,
-        **result
+        "transcribed_text": transcribed_text,
+        **result,
     }
 
 
-from pydantic import BaseModel
-
-class TTSRequest(BaseModel):
-    text: str
 
 
 @router.post("/tts")

@@ -1,11 +1,22 @@
-import requests
+# llm_service.py
+import os
 import json
 import re
+from uuid import uuid4
+from app.prompts.convert_tenses_prompt import get_convert_tenses_generation_prompt,get_convert_tenses_evaluation_prompt
+from app.prompts.correct_sentence_prompt import get_correct_sentence_generation_prompt,get_correct_sentence_evaluation_prompt
+from app.core.llm_client_cc import call_groq_api
 
-OLLAMA_URL = "http://localhost:11434/api/chat"
-MODEL_NAME = "llama3.1:8b"
+
+# ---------------------------
+# HELPER FUNCTION TO CALL GROQ SDK
+# ---------------------------
 
 
+
+# ---------------------------
+# JSON EXTRACTION
+# ---------------------------
 def extract_json(text: str):
     """
     Safely extract JSON from LLM output
@@ -13,85 +24,122 @@ def extract_json(text: str):
     try:
         return json.loads(text)
     except json.JSONDecodeError:
-        match = re.search(r"\{.*\}", text, re.DOTALL)
+        # Non-greedy match to avoid broken JSON
+        match = re.search(r"\{[\s\S]*?\}", text)
         if match:
-            return json.loads(match.group())
+            try:
+                return json.loads(match.group())
+            except json.JSONDecodeError:
+                pass
         raise ValueError("LLM did not return valid JSON")
 
 
-def generate_tense_question():
-    prompt = """
-You MUST generate a grammatically INCORRECT English sentence.
+# -------------------------------------------------
+# QUESTION GENERATION
+# -------------------------------------------------
+def generate_tense_questions_batch():
+    """
+    Generate EXACTLY 5 tense-conversion questions.
+    Each sentence is grammatically correct and must NOT already be in the target tense.
+    """
+    nonce = uuid4().hex
 
-Rules (DO NOT BREAK THESE):
-1. The sentence MUST contain a clear time marker (yesterday, last week, tomorrow, already, etc.)
-2. The verb tense MUST NOT match the time marker
-3. The sentence MUST be WRONG grammatically
-4. DO NOT explain the mistake
-5. DO NOT generate a correct sentence
+    prompt = get_convert_tenses_generation_prompt(nonce)
 
-If the sentence is grammatically correct, the output is INVALID.
+    content = call_groq_api(prompt, temperature=0.7)
+    parsed = extract_json(content)
 
-Respond ONLY in JSON:
-{
-  "sentence": "incorrect sentence here",
-  "topic": "wrong tense used"
-}
-"""
+    # ✅ HARD VALIDATION
+    questions = parsed.get("questions", [])
 
-    response = requests.post(
-        OLLAMA_URL,
-        json={
-            "model": MODEL_NAME,
-            "messages": [
-                {"role": "user", "content": prompt}
-            ],
-            "temperature": 0.3,
-            "stream": False
-        }
-    )
+    if len(questions) != 5:
+        raise ValueError("LLM must return exactly 5 questions")
 
-    response.raise_for_status()
-    data = response.json()
+    seen_targets = set()
+    for q in questions:
+        if "sentence" not in q or "target_tense" not in q:
+            raise ValueError("Invalid question format")
+        if q["target_tense"] in seen_targets:
+            raise ValueError("Duplicate target tense detected")
+        seen_targets.add(q["target_tense"])
 
-    content = data["message"]["content"]
-    return extract_json(content)
+    return parsed
 
 
 
-
-def evaluate_answer(sentence: str, user_answer: str):
-    prompt = f"""
-    Original sentence:
-    "{sentence}"
-
-    User answer:
-    "{user_answer}"
-
-    Evaluate the answer.
-
-    Respond ONLY in JSON:
-    {{
-      "is_correct": true or false,
-      "mistakes": ["..."],
-      "corrected_sentence": "...",
-      "feedback": "Detailed explanation"
-    }}
+# -------------------------------------------------
+# ANSWER EVALUATION
+# -------------------------------------------------
+def evaluate_answer(sentence: str, target_tense: str, user_answer: str):
+    """
+    Evaluate whether the user correctly converted the sentence
+    into the given target tense.
     """
 
-    response = requests.post(
-        OLLAMA_URL,
-        json={
-            "model": MODEL_NAME,
-            "messages": [
-                {"role": "user", "content": prompt}
-            ],
-            "stream": False
-        }
-    )
+    # Escape braces to avoid f-string issues
+    safe_sentence = sentence.replace("{", "{{").replace("}", "}}")
+    safe_target_tense = target_tense.replace("{", "{{").replace("}", "}}")
+    safe_user_answer = user_answer.replace("{", "{{").replace("}", "}}")
 
-    response.raise_for_status()
-    data = response.json()
+    prompt = get_convert_tenses_evaluation_prompt(safe_target_tense, safe_sentence, safe_user_answer)
 
-    content = data["message"]["content"]
-    return extract_json(content)
+    content = call_groq_api(prompt)
+    result = extract_json(content)
+
+    # ---------------------------
+    # SAFETY NORMALIZATION
+    # ---------------------------
+    result["is_correct"] = bool(result.get("is_correct", False))
+    if not result.get("corrected_sentence"):
+        result["corrected_sentence"] = user_answer
+    if not result.get("feedback"):
+        result["feedback"] = "Please review the tense usage and try again."
+
+    return result
+
+
+
+
+
+def generate_incorrect_sentence_batch():
+    """
+    Generate EXACTLY 5 Grammatically incorrect sentences.
+    """
+    nonce = uuid4().hex
+
+    prompt = get_correct_sentence_generation_prompt(nonce)
+
+    content = call_groq_api(prompt, temperature=0.7)
+    parsed = extract_json(content)
+
+    # ✅ HARD VALIDATION
+    questions = parsed.get("questions", [])
+
+    if len(questions) != 5:
+        raise ValueError("LLM must return exactly 5 questions")
+
+    for q in questions:
+        if "sentence" not in q:
+            raise ValueError("Invalid question format")
+
+    return parsed
+
+
+
+
+
+def evaluate_correction(original_sentence: str, user_answer: str):
+    """
+    Evaluate whether the user correctly corrected the sentence.
+    """
+
+    prompt = get_correct_sentence_evaluation_prompt(original_sentence, user_answer)
+
+    content = call_groq_api(prompt)
+    result = extract_json(content)
+
+    result["is_correct"] = bool(result.get("is_correct", False))
+    if not result.get("corrected_sentence"):
+        result["corrected_sentence"] = user_answer
+
+    return result

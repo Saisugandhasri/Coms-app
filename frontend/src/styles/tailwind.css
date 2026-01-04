@@ -1,4 +1,8 @@
-@import 'tailwindcss' source(none);
-@source '../**/*.{js,ts,jsx,tsx}';
+@import "tailwindcss" source(none);
 
-@import 'tw-animate-css';
+/* ✅ Explicitly scan everything inside src */
+@source "./**/*.{js,ts,jsx,tsx}";
+@source "../src/**/*.{js,ts,jsx,tsx}";
+
+/* Optional animations */
+@import "tw-animate-css";
