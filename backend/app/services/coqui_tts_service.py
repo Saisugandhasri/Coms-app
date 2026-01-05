@@ -1,4 +1,4 @@
-# app/services/tts_service.py
+# app/services/coqui_tts_service.py
 
 from TTS.api import TTS
 import uuid

@@ -6,8 +6,9 @@ import os
 import shutil
 
 from app.services.llm_service import generate_incorrect_sentence_batch, evaluate_correction
-from app.services.tts_service import text_to_speech
+from app.services.coqui_Stts_service import text_to_speech
 from app.services.stt_service import speech_to_text
+from app.models.schemas import AnswerRequest_Correct, TTSRequest
 
 router = APIRouter(prefix="/api/exercise", tags=["Correct Sentence"])
 
@@ -16,15 +17,7 @@ router = APIRouter(prefix="/api/exercise", tags=["Correct Sentence"])
 # Schemas
 # -----------------------
 
-class AnswerRequest(BaseModel):
-    exercise_id: str
-    sentence: str
-    user_answer: str
 
-
-
-class TTSRequest(BaseModel):
-    text: str
 
 
 # -----------------------
@@ -47,7 +40,7 @@ def start_correct_sentence_exercise():
 
 
 @router.post("/correct/answer/text")
-def submit_text_answer(payload: AnswerRequest):
+def submit_text_answer(payload: AnswerRequest_Correct):
     """
     LLaMA evaluates text answer
     """

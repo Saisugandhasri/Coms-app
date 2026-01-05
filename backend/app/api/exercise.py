@@ -6,8 +6,9 @@ import os
 import shutil
 
 from app.services.llm_service import generate_tense_questions_batch, evaluate_answer
-from app.services.tts_service import text_to_speech
+from app.services.coqui_tts_service import text_to_speech
 from app.services.stt_service import speech_to_text
+from app.models.schemas import AnswerRequest_Convert,TTSRequest
 
 router = APIRouter(prefix="/api/exercise", tags=["Exercise"])
 
@@ -16,16 +17,6 @@ router = APIRouter(prefix="/api/exercise", tags=["Exercise"])
 # Schemas
 # -----------------------
 
-class AnswerRequest(BaseModel):
-    exercise_id: str
-    sentence: str
-    target_tense: str
-    user_answer: str
-
-
-
-class TTSRequest(BaseModel):
-    text: str
 
 
 # -----------------------
@@ -48,7 +39,7 @@ def start_tense_exercise():
 
 
 @router.post("/tense/answer/text")
-def submit_text_answer(payload: AnswerRequest):
+def submit_text_answer(payload: AnswerRequest_Convert):
     """
     LLaMA evaluates text answer
     """
