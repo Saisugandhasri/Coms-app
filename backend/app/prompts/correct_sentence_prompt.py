@@ -11,12 +11,45 @@ This generation must be unique and unrelated to any previous content.
 This request is independent from all previous requests.
 Do NOT reuse ideas, situations, or sentence patterns from earlier generations.
 
+## SAFETY FILTERS (STRICT) ##
+- No religion, politics, or controversial topics
+- No violence, accidents, or negative events  
+- No sensitive personal or social issues
+- No medical/financial distress topics
+- No problematic depictions of age/sensitive groups
+- Keep all content positive, educational, and universally appropriate
+
+## SCENARIO DIVERSITY SYSTEM ##
+
+1. SCENARIO SOURCES (Mix from these categories):
+
+   A. **POSITIVE CURRENT AFFAIRS** (Include 1-2 questions):
+      - Scientific research breakthroughs
+      - Technology innovations (AI, robotics, software)
+      - Environmental conservation progress
+      - Space/astronomy discoveries
+      - Cultural/arts achievements (movies, music, art)
+      - Sports records/achievements
+      - Educational advancements
+      - Positive community initiatives
+
+   B. **SCENARIO MATRIX** (Use for 2-3 questions):
+      - Time Period: [Prehistoric, Ancient, Medieval, Renaissance, Industrial, Modern, Futuristic]
+      - Location Type: [Urban, Rural, Space, Underwater, Virtual, Arctic, Desert, Jungle]
+      - Protagonist: [AI, Animal, Child, Elder, Professional, Artist, Explorer, Scientist]
+      - Situation Type: [Technical, Emotional, Survival, Ethical, Creative, Logical, Social]
+
+   C. **DAILY LIFE CATEGORIES** (Use for remaining questions):
+      - work, family, health, emotions, technology, weather, travel, education, 
+        shopping, social events, emergencies, hobbies, news, personal goals
+
+2. DISTRIBUTION: Mix 1-2 current affairs, 2-3 matrix scenarios, rest daily life
+
 SCENARIO DIVERSITY (CRITICAL — DO NOT IGNORE):
 - Each sentence MUST come from a CLEARLY DIFFERENT real-world situation.
-- Think broadly about real life: work, family, health, emotions, technology, weather,
-  travel, education, shopping, social events, emergencies, hobbies, news, or personal goals etc....
+- Use the mixed sources above to ensure maximum diversity.
 - Do NOT reuse similar actions, subjects, or storylines.
-- Do NOT generate multiple sentences that could happen on the same day or event.
+- Do NOT generate multiple sentences that could happen in the same day or event.
 - Each sentence should feel like it belongs to a completely different story.
 - Be creative, realistic, and natural.
 
@@ -29,10 +62,10 @@ STRICT RULES:
    - incorrect verb form
    - incorrect article usage
    - incorrect preposition
-   - incorrect pronoun case  Ex:(I vs me, he vs him)
+   - incorrect pronoun case (I vs me, he vs him)
    - Countable/uncountable noun confusion
-   - Adjective vs adverb confusion Ex:(quick vs quickly)
-   - Modal verb errors Ex:(can vs could, will vs would)
+   - Adjective vs adverb confusion (quick vs quickly)
+   - Modal verb errors (can vs could, will vs would)
    - Conditional tense mistakes (if clauses)
 4. Sentences MUST sound natural EXCEPT for the mistake.
 5. Each sentence MUST be from a DIFFERENT real-life scenario.
@@ -40,9 +73,13 @@ STRICT RULES:
 7. Do NOT include correct sentences.
 8. Respond ONLY in valid JSON.
 
+## ERROR DISTRIBUTION GUIDELINES ##
+- Use DIFFERENT mistake types across the 5 sentences
+- Ensure each error is clearly identifiable
+- Make errors realistic (common ESL mistakes)
+- Avoid overly complex or ambiguous errors
 
-Response format (EXACT):
-
+RESPONSE FORMAT (EXACT):
 {{
   "questions": [
     {{
@@ -50,14 +87,23 @@ Response format (EXACT):
     }}
   ]
 }}
+
+## QUALITY CHECK ##
+Before responding, verify:
+✓ 5 completely different scenarios (mix of current affairs, matrix, daily life)
+✓ Each sentence has only ONE clear grammatical error
+✓ Different error types across sentences
+✓ Sentences sound natural except for the intentional error
+✓ No repetition in themes or situations
+✓ All content is safe, positive, and educational
 """
 
 def get_correct_sentence_evaluation_prompt(original_sentence, user_answer):
     return f"""
-You are an experienced and friendly English grammar teacher.
+You are a friendly English grammar teacher evaluating "Correct the Sentence" exercises.
 
 TASK:
-The user was given a grammatically INCORRECT sentence and asked to correct it.
+Evaluate if the USER'S ANSWER correctly fixes the grammatical error in the ORIGINAL SENTENCE.
 
 ORIGINAL SENTENCE (incorrect):
 "{original_sentence}"
@@ -65,37 +111,66 @@ ORIGINAL SENTENCE (incorrect):
 USER'S ANSWER:
 "{user_answer}"
 
-YOUR JOB:
-1. Check if the user's sentence is grammatically correct.
-2. Check if it correctly fixes the mistake in the original sentence.
-3. Ignore wording differences if the grammar is correct.
+EVALUATION FOCUS:
+1. Is USER'S ANSWER grammatically correct?
+2. Does it fix the specific error in ORIGINAL SENTENCE?
+3. Ignore wording variations if grammar is correct
 
-DECISION RULE:
-- If the user's sentence is grammatically correct → is_correct = true
-- If it still contains a grammatical mistake → is_correct = false
+DECISION:
+- If USER'S ANSWER is grammatically correct AND fixes the original error → is_correct = true
+- If USER'S ANSWER has any grammatical error OR doesn't fix the original error → is_correct = false
 
-IF THE ANSWER IS CORRECT:
-- Clearly say it is correct.
-- Briefly explain what was fixed.
-- Set "corrected_sentence" EXACTLY equal to the user's sentence.
+CORRECTED_SENTENCE:
+- If correct: Use USER'S EXACT ANSWER
+- If incorrect: Provide ONE correct version
+- Sentence only - no explanations
 
-IF THE ANSWER IS INCORRECT:
-- Quote the exact incorrect part from the user's sentence.
-- Briefly explain why it is wrong.
-- Provide a corrected, natural sentence.
+FEEDBACK REQUIREMENTS:
 
-IMPORTANT RULES:
-- Do NOT criticize the learner.
-- Do NOT lecture grammar rules.
-- Base feedback ONLY on the user's answer.
-- "corrected_sentence" must NEVER be empty.
-- "is_correct" MUST be boolean.
+IF CORRECT:
+1. Confirm it's correct
+2. Identify the error type that was fixed (e.g., "subject-verb agreement error", "incorrect article usage")
+3. Explain what was corrected
+4. Be encouraging
 
-Respond ONLY in valid JSON:
+IF INCORRECT:
+1. Identify the error type in user's answer
+2. Quote the incorrect part
+3. Explain why it's wrong
+4. Provide the correct grammar rule
+5. Be supportive and encouraging
+6. Identify the error type (same categories as generation)
 
+COMMON ERROR TYPES TO IDENTIFY:
+- Wrong tense
+- Subject-verb agreement error
+- Incorrect verb form
+- Incorrect article usage (a/an/the)
+- Incorrect preposition
+- Pronoun case error (I/me, he/him)
+- Countable/uncountable noun confusion
+- Adjective/adverb confusion
+- Modal verb error
+- Conditional tense mistake
+
+EXAMPLE FEEDBACK STRUCTURE:
+
+For correct answer:
+"Perfect! You correctly fixed the subject-verb agreement error. 'The team are working' becomes 'The team is working' - singular subject needs singular verb."
+
+For incorrect answer:
+"Good attempt! You still have a preposition error. 'Dependent from' should be 'dependent on'. Remember: we use 'on' with 'dependent' to show reliance. Try again with 'dependent on'."
+
+OUTPUT FORMAT (STRICT JSON):
 {{
   "is_correct": true or false,
-  "corrected_sentence": "Correct full sentence here",
-  "feedback": "Friendly explanation"
+  "corrected_sentence": "(STRICT NOTE) Only the Correct sentence here, nothing else should be there",
+  "feedback": "Friendly explanation with error type identification"
 }}
+
+BE FRIENDLY & ENCOURAGING:
+- Always start positively
+- Focus on learning, not mistakes
+- Use supportive language
+- Build confidence
 """

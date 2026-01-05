@@ -4,22 +4,38 @@ from TTS.api import TTS
 import uuid
 import os
 
-# Directory for generated audio
 AUDIO_DIR = "audio_outputs"
 os.makedirs(AUDIO_DIR, exist_ok=True)
 
-# Load TTS model once (for performance)
-tts = TTS(model_name="tts_models/en/ljspeech/tacotron2-DDC", progress_bar=False)
+# Multi-accent model
+tts = TTS(model_name="tts_models/en/vctk/vits", progress_bar=False)
 
-def text_to_speech(text: str) -> str:
+
+def text_to_speech(text: str, accent: str = "clear") -> str:
     """
-    Converts text to a WAV file and returns the file path.
+    Simple TTS with accent choice.
+
+    accent options: "clear", "us", "uk", "indian", "australian"
     """
     filename = f"{uuid.uuid4()}.wav"
     filepath = os.path.join(AUDIO_DIR, filename)
 
-    # Generate speech audio file
-    tts.tts_to_file(text=text, file_path=filepath)
+    # Simple accent mapping
+    speakers = {
+        "clear": "p270",  # Neutral and clear
+        "us": "p225",  # American
+        "uk": "p260",  # British
+        "indian": "p330",  # Indian
+        "australian": "p360"  # Australian
+    }
+
+    speaker = speakers.get(accent, "p330")
+
+    tts.tts_to_file(
+        text=text,
+        file_path=filepath,
+        speaker=speaker
+    )
 
     return filepath
 
