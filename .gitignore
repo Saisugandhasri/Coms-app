@@ -92,3 +92,5 @@ pytest_cache/
 tmp/
 temp/
 .cache/
+audio_outputs/
+temp_audio/
