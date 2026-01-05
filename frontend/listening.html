@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>Reading Comprehension</title>
+  <title>Listening Comprehension</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -13,7 +13,7 @@
     .question {
       margin-bottom: 20px;
       padding: 10px;
-      border: 1px solid #db8c8c;
+      border: 1px solid #8cb6db;
     }
 
     .one-word {
@@ -34,20 +34,25 @@
 
     .topic {
       font-weight: bold;
+    }
+
+    .replay {
       margin-top: 10px;
+      font-size: 14px;
     }
   </style>
 </head>
 
 <body>
 
-  <h2>Reading Comprehension</h2>
-  <button onclick="startAssessment()">Start Assessment</button>
+  <h2>Listening Comprehension</h2>
+  <button onclick="startListening()">Start Listening Assessment</button>
 
   <hr />
 
   <div id="topic" class="topic"></div>
-  <div id="paragraph"></div>
+  <div id="audio-container"></div>
+  <div id="replay-info" class="replay"></div>
 
   <h3 class="h3-mcqs" style="display:none">MCQs</h3>
   <div id="questions"></div>
@@ -55,7 +60,7 @@
   <h3 class="h3-one_word" style="display:none">One-Word Questions</h3>
   <div id="one-word"></div>
 
-  <button class="submit-btn" onclick="submitAssessment()" style="display:none">Submit Answers</button>
+  <button class="submit-btn" onclick="submitAssessment()" style="display:none;">Submit</button>
   <div id="result" class="score"></div>
 
   <script>
@@ -66,11 +71,13 @@
     let totalOneWords = 0;
     let isSubmitted = false;
 
-    const topicEl = document.getElementById("topic");
+    let maxReplays = 3;
+    let remainingReplays = 3;
 
-    document.querySelector(".submit-btn").style.display = "none";
 
-    async function startAssessment() {
+
+
+    async function startListening() {
 
       document.querySelector(".submit-btn").style.display = "none";
       document.querySelector(".h3-mcqs").style.display = "none";
@@ -83,10 +90,10 @@
       document.getElementById("questions").innerHTML = "";
       document.getElementById("one-word").innerHTML = "";
       document.getElementById("result").innerHTML = "";
-      document.getElementById("paragraph").innerHTML = "";
-      document.getElementById("topic").innerHTML = "";
+      document.getElementById("audio-container").innerHTML = "";
+      document.getElementById("replay-info").innerHTML = "";
 
-      const response = await fetch("http://localhost:8000/assessment/reading/start", {
+      const response = await fetch("http://localhost:8000/assessment/listening/start", {
         method: "POST"
       });
 
@@ -95,8 +102,44 @@
       totalMcqs = data.mcqs.length;
       totalOneWords = data.one_word_questions.length;
 
-      topicEl.innerText = `Topic: ${data.topic}`;
-      document.getElementById("paragraph").innerHTML = `<p>${data.paragraph}</p>`;
+      maxReplays = data.max_replays || 3;
+      remainingReplays = maxReplays;
+
+      document.getElementById("topic").innerText = `Topic: ${data.topic}`;
+
+      document.getElementById("audio-container").innerHTML = `
+    <audio id="audioPlayer" controls>
+      <source src="${data.audio_url}" type="audio/mpeg">
+    </audio>
+    <br><br>
+    Speed:
+    <select onchange="audioPlayer.playbackRate=this.value">
+      <option value="0.75">0.75×</option>
+      <option value="1" selected>1×</option>
+      <option value="1.25">1.25×</option>
+    </select>
+  `;
+
+      const audio = document.getElementById("audioPlayer");
+
+      audio.addEventListener("play", () => {
+        if (remainingReplays <= 0) {
+          audio.pause();
+          alert("Replay limit reached.");
+          return;
+        }
+      });
+
+      audio.addEventListener("ended", () => {
+        remainingReplays--;
+        updateReplayInfo();
+
+        if (remainingReplays <= 0) {
+          audio.controls = false;
+        }
+      });
+
+      updateReplayInfo();
 
       // MCQs
       data.mcqs.forEach((q, i) => {
@@ -123,12 +166,15 @@
       </div>
     `;
       });
-
       document.querySelector(".submit-btn").style.display = "inline-block";
       document.querySelector(".h3-mcqs").style.display = "inline-block";
       document.querySelector(".h3-one_word").style.display = "inline-block";
-      // document.querySelector(".topic").style.display = "none"
 
+    }
+
+    function updateReplayInfo() {
+      document.getElementById("replay-info").innerText =
+        `Remaining replays: ${remainingReplays} / ${maxReplays}`;
     }
 
     async function submitAssessment() {
@@ -136,13 +182,6 @@
 
       // Validation
       const answeredMcqs = Object.keys(mcqAnswers).length;
-      const answeredOneWords = Object.keys(oneWordAnswers).length;
-
-      // Check for empty one-word answers even if key exists (though trim handles it mostly, 
-      // if they type and delete, key might remain with empty string depending on implementation. 
-      // current implementation: oneWordAnswers['${i}']=this.value.trim() 
-      // So if they clear it, it becomes "".
-
       const filledOneWords = Object.values(oneWordAnswers).filter(v => v !== "").length;
 
       if (answeredMcqs < totalMcqs || filledOneWords < totalOneWords) {
