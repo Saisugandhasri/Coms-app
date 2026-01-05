@@ -8,7 +8,6 @@ def start_listening_assessment() -> dict:
     topic = get_random_topic()
 
     content = generate_content(topic)
-    print(content)
     audio_id = generate_audio(content["paragraph"])
 
     ASSESSMENTS[assessment_id] = {

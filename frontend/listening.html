@@ -54,13 +54,13 @@
   <div id="audio-container"></div>
   <div id="replay-info" class="replay"></div>
 
-  <h3>MCQs</h3>
+  <h3 class="h3-mcqs" style="display:none">MCQs</h3>
   <div id="questions"></div>
 
-  <h3>One-Word Questions</h3>
+  <h3 class="h3-one_word" style="display:none">One-Word Questions</h3>
   <div id="one-word"></div>
 
-  <button class="submit-btn" onclick="submitAssessment()">Submit</button>
+  <button class="submit-btn" onclick="submitAssessment()" style="display:none;">Submit</button>
   <div id="result" class="score"></div>
 
   <script>
@@ -74,7 +74,15 @@
     let maxReplays = 3;
     let remainingReplays = 3;
 
+
+
+
     async function startListening() {
+
+      document.querySelector(".submit-btn").style.display = "none";
+      document.querySelector(".h3-mcqs").style.display = "none";
+      document.querySelector(".h3-one_word").style.display = "none";
+
       mcqAnswers = {};
       oneWordAnswers = {};
       isSubmitted = false;
@@ -158,6 +166,10 @@
       </div>
     `;
       });
+      document.querySelector(".submit-btn").style.display = "inline-block";
+      document.querySelector(".h3-mcqs").style.display = "inline-block";
+      document.querySelector(".h3-one_word").style.display = "inline-block";
+
     }
 
     function updateReplayInfo() {
@@ -211,7 +223,7 @@
               if (label.innerText.trim().startsWith(userSelected + ".")) {
                 label.style.color = "red";
                 label.style.fontWeight = "bold";
-                label.innerHTML += " ❌ (Your Answer)";
+                label.innerHTML += "(Your Answer)";
               }
             });
           }
@@ -236,7 +248,7 @@
 
             const wrongDiv = document.createElement("div");
             wrongDiv.style.color = "red";
-            wrongDiv.innerText = `Your Answer: ${userAns} ❌`;
+            wrongDiv.innerText = `Your Answer: ${userAns}`;
             questionDiv.appendChild(wrongDiv);
           }
 

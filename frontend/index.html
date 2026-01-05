@@ -49,13 +49,13 @@
   <div id="topic" class="topic"></div>
   <div id="paragraph"></div>
 
-  <h3>MCQs</h3>
+  <h3 class="h3-mcqs" style="display:none">MCQs</h3>
   <div id="questions"></div>
 
-  <h3>One-Word Questions</h3>
+  <h3 class="h3-one_word" style="display:none">One-Word Questions</h3>
   <div id="one-word"></div>
 
-  <button class="submit-btn" onclick="submitAssessment()">Submit Answers</button>
+  <button class="submit-btn" onclick="submitAssessment()" style="display:none">Submit Answers</button>
   <div id="result" class="score"></div>
 
   <script>
@@ -66,7 +66,16 @@
     let totalOneWords = 0;
     let isSubmitted = false;
 
+    const topicEl = document.getElementById("topic");
+
+    document.querySelector(".submit-btn").style.display = "none";
+
     async function startAssessment() {
+
+      document.querySelector(".submit-btn").style.display = "none";
+      document.querySelector(".h3-mcqs").style.display = "none";
+      document.querySelector(".h3-one_word").style.display = "none";
+
       mcqAnswers = {};
       oneWordAnswers = {};
       isSubmitted = false;
@@ -86,7 +95,7 @@
       totalMcqs = data.mcqs.length;
       totalOneWords = data.one_word_questions.length;
 
-      document.getElementById("topic").innerText = `Topic: ${data.topic}`;
+      topicEl.innerText = `Topic: ${data.topic}`;
       document.getElementById("paragraph").innerHTML = `<p>${data.paragraph}</p>`;
 
       // MCQs
@@ -114,6 +123,12 @@
       </div>
     `;
       });
+
+      document.querySelector(".submit-btn").style.display = "inline-block";
+      document.querySelector(".h3-mcqs").style.display = "inline-block";
+      document.querySelector(".h3-one_word").style.display = "inline-block";
+      // document.querySelector(".topic").style.display = "none"
+
     }
 
     async function submitAssessment() {
@@ -169,7 +184,7 @@
               if (label.innerText.trim().startsWith(userSelected + ".")) {
                 label.style.color = "red";
                 label.style.fontWeight = "bold";
-                label.innerHTML += " ❌ (Your Answer)";
+                label.innerHTML += "(Your Answer)";
               }
             });
           }
@@ -194,7 +209,7 @@
 
             const wrongDiv = document.createElement("div");
             wrongDiv.style.color = "red";
-            wrongDiv.innerText = `Your Answer: ${userAns} ❌`;
+            wrongDiv.innerText = `Your Answer: ${userAns}`;
             questionDiv.appendChild(wrongDiv);
           }
 

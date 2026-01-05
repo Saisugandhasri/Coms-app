@@ -9,7 +9,7 @@ def generate_audio(text: str) -> str:
     audio_id = f"{uuid.uuid4()}.mp3"
     audio_path = AUDIO_DIR / audio_id
 
-    tts = gTTS(text=text, lang="en",tld="us")
+    tts = gTTS(text=text, lang="en",tld="co.in")
     tts.save(audio_path)
 
     return audio_id
