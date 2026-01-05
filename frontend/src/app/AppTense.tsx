@@ -237,7 +237,7 @@ export default function App() {
               <div
                 className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                 style={{
-                  width: `${(answeredCount / TOTAL_EXERCISES) * 100}%`,
+                  width: `${(currentIndex / TOTAL_EXERCISES) * 100}%`,
 
                 }}
               />

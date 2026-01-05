@@ -166,6 +166,21 @@ export default function AppCorrect() {
     }
   };
 
+/* -----------------------------
+     Navigation
+  ------------------------------ */
+  const handleNext = () => {
+    if (currentIndex < TOTAL_EXERCISES) {
+      setCurrentIndex((prev) => prev + 1);
+    }
+  };
+
+  const handlePrevious = () => {
+    if (currentIndex > 1) {
+      setCurrentIndex((prev) => prev - 1);
+    }
+  };
+
   /* -----------------------------
      UI
   ------------------------------ */
@@ -180,6 +195,28 @@ export default function AppCorrect() {
               The sentence below has one grammatical mistake. Correct it.
             </p>
           </div>
+          {/* Progress */}
+          <div className="mb-6 flex-shrink-0">
+            <div className="flex justify-between text-sm text-gray-600 mb-2">
+              <span>
+                Exercise {currentIndex} of {TOTAL_EXERCISES}
+              </span>
+              <span>
+                {answeredCount} answered • {correctCount} correct
+              </span>
+            </div>
+
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div
+                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                style={{
+                  width: `${(currentIndex / TOTAL_EXERCISES) * 100}%`,
+
+                }}
+              />
+            </div>
+          </div>
+
 
           <div className="mb-4">
             {currentExercise && (
@@ -199,11 +236,36 @@ export default function AppCorrect() {
                 userAnswer={currentAnswer.userAnswer ?? ""}
                 correctAnswer={currentAnswer.corrected_sentence ?? ""}
                 explanation={currentAnswer.feedback ?? ""}
-                onNext={() => setCurrentIndex((i) => i + 1)}
+                onNext={handleNext}
                 isLastQuestion={currentIndex === TOTAL_EXERCISES}
               />
             )}
           </div>
+          {/* Navigation Buttons */}
+          <div className="mt-4 flex justify-between flex-shrink-0">
+            <Button
+              onClick={handlePrevious}
+              disabled={currentIndex === 1}
+              variant="outline"
+              size="lg"
+            >
+              <ChevronLeft className="w-5 h-5 mr-2" />
+              Previous
+            </Button>
+
+            <Button
+              onClick={handleNext}
+              disabled={
+                currentIndex === TOTAL_EXERCISES
+              }
+              variant="outline"
+              size="lg"
+            >
+              Next
+              <ChevronRight className="w-5 h-5 ml-2" />
+            </Button>
+          </div>
+
 
         </div>
       </main>
